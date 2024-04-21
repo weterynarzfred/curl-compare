@@ -4,7 +4,10 @@ export default function openLinks(messages) {
   let openCount = 0;
   for (const sourceKey in messages) {
     const message = messages[sourceKey];
-    if (message.newElements?.length === 0) continue;
+    if (
+      message.newElements === undefined ||
+      message.newElements.length === 0
+    ) continue;
 
     for (const element of message.newElements) {
       if (element.url === undefined) continue;
