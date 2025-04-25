@@ -1,10 +1,12 @@
-A simple node.js tool for checking for new content on the web. For now it only parses:
-- nyaa.si
-- 1337x.to
+A simple node.js tool for checking for new content on the web - it displays the new content in the terminal. For now it only parses:
+- [nyaa.si](https://nyaa.si/)
+- [1337x.to](https://1337x.to/)
 
-...but you can add more yourself with very basic DOM manipulations.
+...but you can add more yourself with very basic DOM manipulations. 
+The page you're checking needs to be accessible for bots.
 
 ## how to use
+Requires Node 18+
 1. clone this repo
 2. `npm install`
 3. create a `sources.mjs` file in the root directory
@@ -30,7 +32,7 @@ export default [
 ```
 
 ## adding handlers
-You can create any number of `*.mjs` files in the `handlers/` directory. Each one must have a function as the default export. The function receives the DOM (actual DOM, not just the HTML) and the source object that called it (so you can pass custom arguments). It needs to return an array of objects where each at minimum contains a `name` and the `url`.
+You can create any number of `*.mjs` files in the `handlers/` directory. Each one must have a function as the default export. The function receives the DOM (actual DOM, not just the HTML) and the source object that called it (so you can pass custom arguments). It needs to return an array of objects where each at minimum contains a `name` and the `url`. Check the example files - they're just 5 lines of code: [`handlers/nyaa.mjs`](https://github.com/weterynarzfred/curl-compare/blob/master/handlers/nyaa.mjs) and [`handlers/1337x.mjs`](https://github.com/weterynarzfred/curl-compare/blob/master/handlers/1337x.mjs).
 
 The script will compare the returned objects (stringified to json) and display any that are new.
 
