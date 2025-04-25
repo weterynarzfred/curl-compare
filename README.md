@@ -1,4 +1,4 @@
-A simple node.j tool for checking for new content on the web. For now it only parses nyaa.si.
+A simple node.j tool for checking for new content on the web. For now it only parses nyaa.si and 1337x.to.
 
 To use create a `sources.mjs` file in the root directory with a content like this:
 ```js

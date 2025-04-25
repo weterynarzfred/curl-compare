@@ -6,9 +6,9 @@ import relativeTime from 'dayjs/plugin/relativeTime.js';
 import cliProgress from 'cli-progress';
 
 import sources from './sources.mjs';
-import handleNyaa from './handlers/nyaa.mjs';
 import consoleResults from './src/consoleResults.mjs';
 import openLinks from "./src/openLinks.mjs";
+import { loadHandlers } from "./handlers/_index.mjs";
 
 const { JSDOM } = jsdom;
 const db = await JSONFilePreset('db.json', {});
@@ -24,6 +24,7 @@ const bar = new cliProgress.SingleBar({
 bar.start(sources.length, 0);
 const messages = {};
 const errors = [];
+const handlers = await loadHandlers();
 
 for (let i = 0; i < sources.length; i++) {
   const source = sources[i];
@@ -32,11 +33,9 @@ for (let i = 0; i < sources.length; i++) {
     const dom = await JSDOM.fromURL(source.url);
     let list;
 
-    if (source.type === 'nyaa') {
-      list = handleNyaa(dom);
-    } else {
-      throw new Error('Unknown source type');
-    }
+    const handler = handlers[source.type];
+    if (!handler) throw new Error('Unknown source type');
+    list = handler(dom, source);
 
     const sourceData = db.data[source.url] ?? { list: [], lastCheck: 0, lastUpdate: 0 };
     list = list.map(JSON.stringify);
