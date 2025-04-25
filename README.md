@@ -1,12 +1,13 @@
 A simple node.js tool for checking for new content on the web. For now it only parses:
 - nyaa.si
 - 1337x.to
-but you can add more yourself.
+
+...but you can add more yourself with very basic DOM manipulations.
 
 ## how to use
 1. clone this repo
 2. `npm install`
-3. create a sources.mjs file in the root directory
+3. create a `sources.mjs` file in the root directory
 4. `npm run check` or use the batch file if you're on windows
 
 ## defining sources
