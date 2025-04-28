@@ -1,18 +1,21 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { readdir } from 'fs/promises';
+import { dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export async function loadHandlers() {
   const handlers = {};
-  const files = await fs.readdir(__dirname);
+  const files = await readdir(__dirname);
+  const handlerFiles = files.filter(file => file.endsWith('.mjs') && !file.startsWith('_'));
 
-  for (const file of files) {
-    if (file.endsWith('.mjs')) {
-      const type = path.basename(file, '.mjs');
-      handlers[type] = (await import(`./${file}`)).default;
+  for (const file of handlerFiles) {
+    try {
+      const type = basename(file, '.mjs');
+      const module = await import(new URL(file, import.meta.url));
+      handlers[type] = module.default;
+    } catch (err) {
+      console.error(`Failed to load handler from ${file}:`, err);
     }
   }
 

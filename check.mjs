@@ -1,5 +1,6 @@
-import jsdom from 'jsdom';
+import { JSDOM } from 'jsdom';
 import { JSONFilePreset } from 'lowdb/node';
+import _ from "lodash";
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration.js';
 import relativeTime from 'dayjs/plugin/relativeTime.js';
@@ -7,72 +8,78 @@ import cliProgress from 'cli-progress';
 
 import sources from './sources.mjs';
 import consoleResults from './src/consoleResults.mjs';
-import openLinks from "./src/openLinks.mjs";
-import { loadHandlers } from "./handlers/_index.mjs";
+import openLinks from './src/openLinks.mjs';
+import { loadHandlers } from './handlers/_index.mjs';
 
-const { JSDOM } = jsdom;
-const db = await JSONFilePreset('db.json', {});
-const MONTH_IN_MS = 1000 * 60 * 60 * 24 * 30;
+function simplifyUrl(url) {
+  return url.replace(/^https?:\/\/(www\.)?/, '');
+}
+
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
-console.log('\x1b[1m%s\x1b[0m', "\n# checking");
-const bar = new cliProgress.SingleBar({
+const db = await JSONFilePreset('db.json', {});
+const MONTH_IN_MS = 30 * 24 * 60 * 60 * 1000;
+const BOLD = '\x1b[1m';
+const RESET = '\x1b[0m';
+
+console.log(`${BOLD}\n# Checking${RESET}`);
+
+const progressBar = new cliProgress.SingleBar({
   format: '[{bar}] {value}/{total}',
   barsize: 80,
+  hideCursor: true,
 }, cliProgress.Presets.shades_classic);
-bar.start(sources.length, 0);
+
+const handlers = await loadHandlers();
 const messages = {};
 const errors = [];
-const handlers = await loadHandlers();
 
-for (let i = 0; i < sources.length; i++) {
-  const source = sources[i];
+progressBar.start(sources.length, 0);
 
+for (const [index, source] of sources.entries()) {
   try {
-    const dom = await JSDOM.fromURL(source.url);
-    let list;
-
     const handler = handlers[source.type];
-    if (!handler) throw new Error('Unknown source type');
-    list = handler(dom, source);
+    if (!handler) throw new Error(`Unknown source type: ${source.type}`);
 
-    const sourceData = db.data[source.url] ?? { list: [], lastCheck: 0, lastUpdate: 0 };
-    list = list.map(JSON.stringify);
-    const now = new Date().getTime();
+    const dom = await JSDOM.fromURL(source.url);
+    const extractedList = handler(dom, source).map(JSON.stringify);
 
-    if (JSON.stringify(sourceData.list) === JSON.stringify(list)) {
-      const diff = now - db.data[source.url].lastUpdate;
-      if (diff > MONTH_IN_MS) {
+    const now = Date.now();
+    const storedData = db.data[source.url] ?? { list: [], lastCheck: 0, lastUpdate: 0 };
+    const oldList = storedData.list;
+
+    if (_.isEqual(oldList, extractedList)) {
+      const timeSinceUpdate = now - storedData.lastUpdate;
+      if (timeSinceUpdate > MONTH_IN_MS) {
         messages[source.url] = {
-          name: source.name ?? source.url.replace(/https?:\/\/(www\.)?/, ''),
-          warning: `last update was ${dayjs.duration(-diff, 'ms').humanize(true)}`,
+          name: source.name ?? simplifyUrl(source.url),
+          warning: `Last update was ${dayjs.duration(-timeSinceUpdate, 'ms').humanize(true)}`,
         };
       }
-      db.data[source.url].lastCheck = now;
+      storedData.lastCheck = now;
     } else {
       db.data[source.url] = {
-        list: list,
+        list: extractedList,
         lastCheck: now,
         lastUpdate: now,
       };
 
       messages[source.url] = {
-        name: source.name ?? source.url.replace(/https?:\/\/(www\.)?/, ''),
-        newElements: list.filter(item => !sourceData.list.includes(item)).map(JSON.parse),
-        removedElements: sourceData.list.filter(item => !list.includes(item)).map(JSON.parse),
+        name: source.name ?? simplifyUrl(source.url),
+        newElements: extractedList.filter(item => !oldList.includes(item)).map(JSON.parse),
+        removedElements: oldList.filter(item => !extractedList.includes(item)).map(JSON.parse),
       };
     }
-
   } catch (error) {
-    errors.push(source.url + " : " + error);
-    continue;
+    errors.push(`${source.url} : ${error.message || error}`);
   } finally {
-    bar.update(i + 1);
+    progressBar.update(index + 1);
   }
 }
-bar.stop();
 
+progressBar.stop();
 await db.write();
+
 consoleResults(messages, errors);
 openLinks(messages);
