@@ -1,5 +1,7 @@
+# curl compare
+
 A simple node.js tool for checking for new content on the web - it displays the new content in the terminal. For now it only parses:
-- [nyaa.si](https://nyaa.si/)
+- [nyaa.si](https://nyaa.si/) (no longer working due to bot protection)
 - [1337x.to](https://1337x.to/)
 
 ...but you can add more yourself with very basic DOM manipulations. 

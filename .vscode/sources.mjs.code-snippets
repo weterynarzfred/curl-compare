@@ -1,0 +1,10 @@
+{
+  "Source": {
+    "prefix": "source",
+    "body": "{\n  name: '${1:name}',\n  type: '${2:type}',\n  url: '${3:url}',\n},",
+  },
+  "Source with Filter": {
+    "prefix": "source",
+    "body": "{\n  name: '${1:name}',\n  type: '${2:type}',\n  url: '${3:url}',\n  filter: () => true,\n},",
+  }
+}
